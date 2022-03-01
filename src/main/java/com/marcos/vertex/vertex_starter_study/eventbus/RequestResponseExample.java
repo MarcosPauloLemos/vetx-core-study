@@ -1,18 +1,20 @@
 package com.marcos.vertex.vertex_starter_study.eventbus;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import io.vertx.core.eventbus.DeliveryOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.time.Duration;
 
 public class RequestResponseExample {
 
   public static void main(String[] args) {
     var vertx = Vertx.vertx();
     vertx.deployVerticle(new RequestVerticle());
-    vertx.deployVerticle(new ResponseVerticle());
+    vertx.deployVerticle(ResponseVerticle.class.getName(), new DeploymentOptions().setInstances(2));
   }
 
   static class RequestVerticle extends AbstractVerticle {
@@ -26,13 +28,15 @@ public class RequestResponseExample {
       var eventBus = vertx.eventBus();
       final String message = "Hello World!";
       LOG.debug("Sending: {}", message);
-      eventBus.<String>request(ADDRESS, message, reply -> {
-        LOG.debug("Response: {}", reply.result().body());
+      vertx.setPeriodic(Duration.ofSeconds(10).toMillis(), id -> {
+        eventBus.<String>request(ADDRESS, message, reply -> {
+          LOG.debug("Response: {}", reply.result().body());
+        });
       });
     }
   }
 
-  static class ResponseVerticle extends AbstractVerticle {
+  public static class ResponseVerticle extends AbstractVerticle {
 
     private static final Logger LOG = LoggerFactory.getLogger(ResponseVerticle.class);
 
